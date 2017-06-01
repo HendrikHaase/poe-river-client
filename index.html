@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <title>poexile - livesearch</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+		<script src="js/clipboard.min.js"></script>
+		<script src="js/moment.min.js"></script>
+        
+        <style>
+                body {
+                    padding-top: 100px;
+                }
+                div.fixed-top {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        padding: 10px;
+                        background-color: #f5f5f5;
+                        border-bottom: 1px solid #333333;
+                        width: 100%;
+                }
+                div.fixed-top > * {
+                        float: left;
+                        margin: 0 10px;
+                }
+
+                div.entryDiv {
+					width: 24.4%;
+                    margin: 5px;
+                    padding: 5px;
+                    height: 147px;
+                    float: left;
+                    border: 1px solid #666;
+                    position: relative;
+                }
+                @media(max-width: 1400px) {
+                    div.entryDiv {
+                        width: 48.4%;
+                    }
+                }
+                @media(max-width: 1200px) {
+                    div.entryDiv {
+                        width: 98%;
+                    }
+                }
+
+                div.imageDiv {
+                    width: 40px;
+                    line-height: 50px;
+                    height: 40px;
+                    float: left;
+                    margin-right: 5px;
+                    text-align: center;
+                }
+                div.imageDiv > img {
+                        max-width: 100%;
+                        max-height: 100%;
+                }
+
+				div.actionDiv {
+					clear: both;
+				}
+				
+                div.statsDiv {
+                    line-height: 50px;
+                    font-weight: 600;
+                    background-color: #f0f0f0;
+                }
+                
+                div.priceDiv, div.userDiv {
+                    position: absolute;
+                    right: 50px;
+                    bottom: 5px;
+                    text-align: right;
+                    line-height: 30px;
+                }
+                div.userDiv {
+                    left: 5px !important;
+                    text-align: left;
+                }
+                
+                div.whisperDiv {
+                    width: auto;
+                    position: absolute;
+                    right: 5px;
+                    bottom: 5px;
+                }
+                
+                .copied {
+                    background-color: #f0f0f0;
+                }
+                
+                span#badgePricedOnly, span#badgeMaxPrice, div.maxPrices {
+                  visibility: hidden;
+                }
+                .isVisible {
+                  visibility: visible !important;
+                }
+				
+				.whisperCopy, .whisperBtn {
+					
+				}
+				.whisperCopy {
+					position: fixed;
+                    left: 100%;
+				}
+				.whisperBtn {
+					max-height: 30px;
+				}
+				.whisperBtn > img {
+					max-height: 20px;
+				}
+                
+                
+                div#changeNotes {
+                    position: fixed;
+                    top: 10px;
+                    right: 10px;
+                    text-align: right;
+                    padding: 5px;
+                    background-color: #cafbca;
+                    border-radius: 6px;
+                }
+                div#changeNotes > p {
+                    max-width: 40vw;
+                    font-size: 12px;
+                    margin-bottom: 0;
+                }
+                
+                div.timeDiv {
+                    line-height: 25px;
+                    height: 20px;
+                    text-align: right;
+                    margin-right: 10px;
+                    margin-top: 5px;
+                    position: absolute;
+                    right: 0;
+                    top: 0;
+                }
+        </style>
+</head>
+
+<body>
+        <div class="fixed-top">
+                <span id="message" class="badge badge-default">not connected</span>
+                <span class="badge badge-default">clients:</span><span id="clients" class="badge badge-success">-</span>
+                <span class="badge badge-default">search:</span><span id="st" class="badge badge-primary">-</span>
+                <span class="badge badge-success" id="badgePricedOnly">pricedOnly</span><span class="badge badge-success" id="badgeMaxPrice">maxPriceSet</span>
+                <br />
+                <span id="last" class="badge badge-default">-</span>
+                <span id="avg" class="badge badge-default">-</span>
+                <span id="current_change_id" class="badge badge-primary">-</span>
+                <span id="next_change_id" class="badge badge-info">-</span>
+                <div id="changeNotes">
+                    <p>
+                        limited displayed (and invisible!) items to a maximum of 100, after we reach this threshold we throw away stuff from the beginning of the list. Browser-Performance dies soon.
+                    </p>
+                </div>
+        </div>
+        <div class="container-fluid">
+                <div class="input-group">
+                        <input type="text" class="form-control" id="setSearchterm" placeholder="Itemname...">
+                        <span class="input-group-btn">
+                                <button class="btn btn-secondary" id="searchterm" onclick="setSearchterm();" type="button">set</button>
+                        </span>
+                        <span class="input-group-btn">
+                                <button class="btn btn-secondary" id="clear" onclick="clearResults();" type="button">clear results</button>
+                        </span>
+                </div>
+                <div class="form-check mb-2 mr-sm-2 mb-sm-0">
+                  <label class="form-check-label">
+                    <input class="form-check-input" id="pricedOnly" type="checkbox" onchange="checkboxPricedOnly();"> only show priced items
+                  </label>
+                </div>
+				<div class="input-group maxPrices">
+                        <input type="text" class="form-control" id="maxPriceInChaos" onchange="updateMaxPriceInChaos(this);" onkeyup="updateMaxPriceInChaos(this);" placeholder="max. price in chaos orbs, just a number - e.g. 100 -- leave empty or set to -1 to show every priced item">
+                </div>
+
+                <hr />
+
+                <div id="log"></div>
+        </div>
+
+        <script>
+				var maxPriceInChaos = -1;
+                var host = "localhost"; //"poexile.de"; //window.location.host;
+                var $status = $('#message');
+                var $clients = $('#clients');
+                var $searchterm = $('#st');
+                var $setSearchterm = $('#searchterm');
+                var $setSearchtermValue = $('#setSearchterm');
+				var $maxPriceInChaos = $('#maxPriceInChaos');
+                var $current_change_id = $('#current_change_id');
+                var $next_change_id = $('#next_change_id');
+                var $log = $('#log');
+                var $last = $('#last');
+                var $avg = $('#avg');
+                var ws;
+
+                window.addEventListener("load", function(event) {
+                        //build ws
+                        ws = new WebSocket('ws://'+host+':19888', 'poexile-livesearch');
+
+                        ws.onopen = function() {
+                                ws.send(JSON.stringify({"init":true}));
+                                $status.text('connected');
+                                $status.removeClass('badge-default').removeClass('badge-danger').addClass('badge-success');
+                        }
+                        ws.onclose = function() {
+                                $status.text('closed');
+                                $status.removeClass('badge-success').removeClass('badge-danger').addClass('badge-default');
+                        }
+                        ws.onerror = function() {
+                                $status.text('error');
+                                $status.removeClass('badge-default').removeClass('badge-success').addClass('badge-danger');
+                        }
+                        ws.onmessage = function(d) {
+                                if(d.data !== undefined) {
+                                        var data = JSON.parse(d.data);
+                                        //console.log(data);
+
+                                        if(data.clients !== undefined) {
+                                            updateClients(data.clients);
+                                        }
+
+                                        if(data.next_change_id !== undefined && data.current_change_id !== undefined)
+                                            updateChangeIds(data.current_change_id, data.next_change_id);
+
+                                        if(data.searchterm !== undefined)
+                                            updateSearchterm(data.searchterm);
+
+                                        if(data.lastCall !== undefined && data.avgLastFiftyCalls !== undefined)
+                                            updateTimes(data.lastCall, data.avgLastFiftyCalls);
+
+                                        if(data.entry !== undefined) {
+                                            renderEntry(data.entry);
+                                        }
+
+                                }
+                        }
+
+                });
+
+                function renderEntry(entry) {
+						var item = entry.item;
+						var user = entry.user;
+						var whisper = entry.whisper;
+						var isPriced = entry.isPriced;
+						var price = null; //parse max price from entry
+
+
+						var entryDiv = $(document.createElement('div')).attr('id',item.id).addClass('entryDiv').addClass( (isPriced ? 'priced' : 'unpriced') ).addClass('entryDiv').attr('priceInChaos',item.priceInChaos);
+						var imageDiv = $(document.createElement('div')).addClass('imageDiv');
+						var image = $(document.createElement('img')).attr('src',item.icon);
+						imageDiv.append(image);
+
+						var statsDiv = $(document.createElement('div')).addClass('statsDiv').text(item.name);
+						var actionDiv = $(document.createElement('div')).addClass('actionDiv');
+						var priceDiv = $(document.createElement('div')).addClass('priceDiv').text((item.note !== "" ? item.note : "~unpriced"));
+                        var userDiv = $(document.createElement('div')).addClass('userDiv').text("@"+user.characterName).attr('title','Account: '+user.accountName);
+						//var whisperDiv = $(document.createElement('div')).addClass('whisperDiv').text(whisper);
+						var whisperDiv = $(document.createElement('div')).addClass('whisperDiv').addClass('input-group').html('<input id="whisper-'+ item.id +'" class="whisperCopy form-group" />' +
+							'<button class="whisperBtn" data-clipboard-target="#whisper-'+ item.id +'" onclick="onCopyClick(this);">' + 
+								'<img src="assets/clippy.svg" alt="Copy to clipboard">' +
+							'</button>');
+						
+						actionDiv.append(priceDiv);
+						actionDiv.append(userDiv);
+						actionDiv.append(whisperDiv);
+
+                        entryDiv.attr('data-time-listed',entry.datetime)
+                        
+                        var timeDiv = $(document.createElement('div')).addClass('timeDiv').text("%s");
+                       
+                        entryDiv.append(timeDiv);
+						entryDiv.append(imageDiv);
+						entryDiv.append(statsDiv);
+						entryDiv.append(actionDiv);
+
+						if($('#'+item.id).length > 0) {
+							$('#'+item.id).replaceWith(entryDiv);
+                            $('#whisper-'+ item.id).val(whisper);
+
+							entryDiv.css("opacity", 0)
+							entryDiv.animate({ opacity: 1}, 1000);
+						}
+						else {
+                            if($log.children('div').length >= 100)
+                                $log.children('div').first().remove();
+                        
+                            $log.append(entryDiv);
+                            $('#whisper-'+ item.id).val(whisper);
+						}
+                        
+                        setVisibilityForMaxPriceInChaos(maxPriceInChaos);
+                }
+
+                function clearResults() {
+                    $log.empty();
+                }
+                function setSearchterm() {
+                        //console.log("set search: ", $setSearchtermValue.val().trim());
+                        $searchterm.text($setSearchtermValue.val().trim());
+                        ws.send(JSON.stringify({"searchterm":$setSearchtermValue.val().trim()}));
+                }
+
+                function setVisibilityForMaxPriceInChaos(mp) {
+                    if(mp < 1) {
+                        $.each($('.entryDiv'), function(i, e) {
+                            $(e).css('display','block');
+                        });
+                        
+                        return;
+                    }
+                    
+                    $.each($('.entryDiv'), function(i, e) {
+                        if(parseInt($(e).attr('priceinchaos')) > mp || parseInt($(e).attr('priceinchaos')) == -1) {
+                            $(e).css('display','none');
+                        }
+                        else {
+                            $(e).css('display','block');
+                        }
+                    });
+                }
+                
+				function updateMaxPriceInChaos(domElem) {
+					maxPriceInChaos = parseInt($(domElem).val());
+                    setVisibilityForMaxPriceInChaos(maxPriceInChaos);
+				}
+				
+                function checkboxPricedOnly() {
+                  var styleId = 'hide-unpriced';
+
+                  if($('#pricedOnly:checked').length > 0) {
+                    $('#badgePricedOnly, .maxPrices').addClass('isVisible');
+
+                    var style = $(document.createElement('style')).attr('id',styleId).html('.unpriced { display: none !important; }');
+                    $('head').append(style);
+                  }
+                  else {
+                    $('#badgePricedOnly, .maxPrices').removeClass('isVisible');
+                    $('#'+styleId).remove();
+                    $('#maxPriceInChaos').val("");
+                    maxPriceInChaos = -1;
+                  }
+                }
+
+                function updateClients(string) {
+                    $clients.text(parseInt(string));
+                }
+                function updateChangeIds(current, next) {
+                        $current_change_id.text(current);
+                        $next_change_id.text(next);
+                }
+                function updateSearchterm(searchterm) {
+                        $searchterm.text(searchterm);
+                }
+                function updateTimes(last, avg) {
+                        var elems = [[$last, last], [$avg, avg]];
+
+                        var i = 0;
+                        elems.forEach(function(arr) {
+                                var e = arr[0];
+                                var t = parseInt(arr[1]);
+
+                                e.removeClass('badge-default').removeClass('badge-success').removeClass('badge-warning').removeClass('badge-danger');
+
+                                if(t < 5000) {
+                                        e.addClass('badge-success');
+                                }
+                                else if(t < 7500) {
+                                        e.addClass('badge-warning');
+                                }
+                                else {
+                                        e.addClass('badge-danger');
+                                }
+
+                                var pt = parseFloat(t / 1000).toFixed(3);
+
+                                if(i === 0)
+                                        e.text("current: " + pt + "s");
+                                else
+                                        e.text("avg~50: " + pt + "s");
+
+                                i++;
+                        });
+
+                }
+
+                $(document).ready(function() {
+					new Clipboard('.whisperBtn');
+                    checkboxPricedOnly();
+                    
+                    setInterval(function() {
+                        updateTimeListed(".entryDiv");
+                    }, 1000);
+                });
+                
+                function onCopyClick(thisElem) {
+                    var parentElem = $(thisElem).closest('div.entryDiv');
+                    parentElem.addClass('copied');
+                    console.log("copied!");
+                }
+                
+                function updateTimeListed(selector) {
+                    $.each($(selector), function(i, e) {
+                        var elem = $(e);
+                        var secondsSinceOccurence = Math.floor(moment(elem.attr('data-time-listed')).diff(moment.now()) * -1 / 1000);
+                        
+                        var color = "#000000";
+                        if(secondsSinceOccurence < 30) {
+                            color = "#33cc33";
+                        }
+                        else if(secondsSinceOccurence < 60) {
+                            color = "#ff9933";
+                        }
+                        else {
+                            color = "#cc0000";
+                        }
+                        
+                        elem.children('.timeDiv').css('color',color).text(secondsSinceOccurence + "s");
+                    });
+                }
+        </script>
+</body>
+</html>
